@@ -970,7 +970,8 @@ index 000000000000..f43a17cff3a3
 +		break;
 +	case S_VSOCK:
 +		// TODO implement remote setsockopt
-+		err = 0;
++		pr_debug("TSI: setsockopt on S_VSOCK stream socket (level %d, optname %d), op not supported.\n", level, optname);
++		err = -EOPNOTSUPP;
 +		break;
 +	}
 +
@@ -1003,7 +1004,8 @@ index 000000000000..f43a17cff3a3
 +		break;
 +	case S_VSOCK:
 +		// TODO implement remote setsockopt
-+		err = 0;
++		pr_debug("TSI: setsockopt on S_VSOCK dgram socket (level %d, optname %d), op not supported.\n", level, optname);
++		err = -EOPNOTSUPP;
 +		break;
 +	}
 +
@@ -1352,9 +1354,11 @@ index 000000000000..f43a17cff3a3
 +	return 0;
 +
 +release_vsocket:
-+	vsocket->ops->release(vsocket);
++	if (vsocket)
++		vsocket->ops->release(vsocket);
 +release_isocket:
-+	isocket->ops->release(isocket);
++	if (isocket)
++		isocket->ops->release(isocket);
 +	return err;
 +}
 +
