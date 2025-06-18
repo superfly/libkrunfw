@@ -1,5 +1,7 @@
 #!/bin/sh
 
+set -x
+
 # This is a helper script for building the Linux kernel on macOS using
 # a lightweight VM with krunvm.
 
@@ -12,7 +14,7 @@ fi
 # realpath does not exist by default on macOS, use `brew install coreutils` to get it
 SCRIPTPATH=`realpath $0`
 WORKDIR=`dirname $SCRIPTPATH`
-krunvm create debian:bookworm-slim --name libkrunfw-builder --cpus 2 --mem 2048 -v $WORKDIR:/work -w /work
+krunvm create debian:bookworm-slim --name libkrunfw-builder --cpus 8 --mem 8192 -v $WORKDIR:/work -w /work
 if [ $? != 0 ]; then
 	echo "Error creating lightweight VM"
 	exit -1

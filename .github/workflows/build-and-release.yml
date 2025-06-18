@@ -1,0 +1,127 @@
+name: Build, and Release Kernels
+
+# This workflow runs on pull requests and when a new tag is created.
+on:
+  pull_request:
+  create:
+
+env:
+  KERNEL_VERSION: 6.12.20
+
+jobs:
+  # Job to build the x86_64 version of the kernel
+  build_x86_64:
+    name: Build x86_64 Kernel
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Code checkout
+        uses: actions/checkout@v4
+
+      - name: Cache Build Directories
+        uses: actions/cache@v4
+        with:
+          # Define the paths to cache
+          path: |
+            tarballs
+            linux-${{ env.KERNEL_VERSION }}
+          # Create a unique key for the cache based on OS, architecture, and kernel version
+          key: ${{ runner.os }}-kernel-x86_64-${{ env.KERNEL_VERSION }}
+          # Provide a fallback key
+          restore-keys: |
+            ${{ runner.os }}-kernel-x86_64-
+
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y curl build-essential python3-pyelftools bc kmod cpio flex libncurses5-dev libelf-dev libssl-dev dwarves bison
+
+      - name: Build x86_64 kernel
+        run: make KERNEL_VERSION=linux-${{ env.KERNEL_VERSION }}
+
+      - name: Upload x86_64 Kernel Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: kernel-x86_64
+          # IMPORTANT: Replace this path with the actual path to your built x86_64 kernel
+          path: libkrunfw.so.4.9.0
+
+  # Job to cross-compile the aarch64 version of the kernel
+  build_aarch64:
+    name: Cross-build aarch64 Kernel
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Code checkout
+        uses: actions/checkout@v4
+
+      - name: Cache Build Directories
+        uses: actions/cache@v4
+        with:
+          # Define the paths to cache
+          path: |
+            tarballs
+            linux-${{ env.KERNEL_VERSION }}
+          # Create a unique key for the cache based on OS, architecture, and kernel version
+          key: ${{ runner.os }}-kernel-aarch64-${{ env.KERNEL_VERSION }}
+          # Provide a fallback key
+          restore-keys: |
+            ${{ runner.os }}-kernel-aarch64-
+
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y curl build-essential python3-pyelftools bc kmod cpio flex libncurses5-dev libelf-dev libssl-dev dwarves bison gcc-aarch64-linux-gnu
+
+      - name: Build aarch64 kernel
+        run: make KERNEL_VERSION=linux-${{ env.KERNEL_VERSION }} ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu-
+
+      - name: Upload aarch64 Build Artifacts
+        # This step uploads the entire directory for the macos job to use
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-output-aarch64
+          path: .
+
+  # Job to take the aarch64 build and create a .dylib on macOS ARM64
+  build_macos_dylib:
+    name: Build macOS arm64 .dylib
+    runs-on: macos-14 # This is the Apple Silicon (ARM64) runner
+    needs: build_aarch64 # This job depends on the aarch64 build completing successfully
+    steps:
+      - name: Download aarch64 build output
+        uses: actions/download-artifact@v4
+        with:
+          name: build-output-aarch64
+          path: . # Download to the current directory
+
+      - name: Build .dylib from aarch64 artifacts
+        # IMPORTANT: You may need a specific make target here instead of a plain 'make'.
+        # For example: make my-dylib-target
+        run: make KERNEL_VERSION=linux-${{ env.KERNEL_VERSION }}
+
+      - name: Upload .dylib Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dylib-arm64
+          path: libkrunfw.4.dylib
+
+  # Job to create a release if the trigger was a tag
+  release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    # Only run this job if the event was a tag being created
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: [build_x86_64, build_aarch64, build_macos_dylib] # Depends on all build jobs
+    permissions:
+      contents: write # Required to create a release
+    steps:
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          # No name downloads all artifacts from the workflow run
+          path: artifacts
+
+      - name: Create Release and Upload Artifacts
+        uses: softprops/action-gh-release@v2
+        with:
+          # This will create a release with the tag name and upload all files
+          # from the 'artifacts' directory as release assets.
+          files: |
+            artifacts/kernel-x86_64/*
+            artifacts/build-output-aarch64/libkrunfw.so.4.9.0
+            artifacts/dylib-arm64/*

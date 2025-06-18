@@ -18,7 +18,12 @@ guest acting as a proxy, without the need to use bridged tap devices
 nor virtual network interfaces, achieving a good performance with a
 low overall footprint.
 
-TODO - implement remote [get|set]sockopt
+Enhanced socket option handling: TSI sockets in S_VSOCK state return success
+for all setsockopt calls instead of EOPNOTSUPP, eliminating application errors
+like "tcp set_nodelay error: Operation not supported" while TSI proxy connections
+are active.
+
+TODO - implement actual remote [get|set]sockopt forwarding
 
 Signed-off-by: Sergio Lopez <slp@redhat.com>
 ---
@@ -427,7 +432,7 @@ index 000000000000..f43a17cff3a3
 +		}
 +	}
 +
-+	if (vsocket) {
++	if (vsocket && (sin->sin_addr.s_addr & 0xff) != 0x7f) {
 +		struct sockaddr_vm vm_addr;
 +		struct tsi_connect_req tc_req;
 +		struct tsi_connect_rsp tc_rsp;
@@ -969,7 +974,8 @@ index 000000000000..f43a17cff3a3
 +					       optlen);
 +		break;
 +	case S_VSOCK:
-+		// TODO implement remote setsockopt
++		// TODO implement remote setsockopt - for now, return success to avoid app errors
++		pr_debug("TSI: setsockopt on S_VSOCK stream socket (level %d, optname %d), returning success.\n", level, optname);
 +		err = 0;
 +		break;
 +	}
@@ -1002,7 +1008,8 @@ index 000000000000..f43a17cff3a3
 +					       optlen);
 +		break;
 +	case S_VSOCK:
-+		// TODO implement remote setsockopt
++		// TODO implement remote setsockopt - for now, return success to avoid app errors
++		pr_debug("TSI: setsockopt on S_VSOCK dgram socket (level %d, optname %d), returning success.\n", level, optname);
 +		err = 0;
 +		break;
 +	}
@@ -1352,9 +1359,11 @@ index 000000000000..f43a17cff3a3
 +	return 0;
 +
 +release_vsocket:
-+	vsocket->ops->release(vsocket);
++	if (vsocket)
++		vsocket->ops->release(vsocket);
 +release_isocket:
-+	isocket->ops->release(isocket);
++	if (isocket)
++		isocket->ops->release(isocket);
 +	return err;
 +}
 +
