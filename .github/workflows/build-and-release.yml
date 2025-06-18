@@ -5,20 +5,36 @@ on:
   pull_request:
   create:
 
+env:
+  KERNEL_VERSION: 6.12.20
+
 jobs:
   # Job to build the x86_64 version of the kernel
   build_x86_64:
     name: Build x86_64 Kernel
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Code checkout
         uses: actions/checkout@v4
+
+      - name: Cache Build Directories
+        uses: actions/cache@v4
+        with:
+          # Define the paths to cache
+          path: |
+            tarballs
+            linux-${{ env.KERNEL_VERSION }}
+          # Create a unique key for the cache based on OS, architecture, and kernel version
+          key: ${{ runner.os }}-kernel-x86_64-${{ env.KERNEL_VERSION }}
+          # Provide a fallback key
+          restore-keys: |
+            ${{ runner.os }}-kernel-x86_64-
 
       - name: Install dependencies
         run: sudo apt-get update && sudo apt-get install -y curl build-essential python3-pyelftools bc kmod cpio flex libncurses5-dev libelf-dev libssl-dev dwarves bison
 
       - name: Build x86_64 kernel
-        run: make
+        run: make KERNEL_VERSION=linux-${{ env.KERNEL_VERSION }}
 
       - name: Upload x86_64 Kernel Artifact
         uses: actions/upload-artifact@v4
@@ -30,16 +46,29 @@ jobs:
   # Job to cross-compile the aarch64 version of the kernel
   build_aarch64:
     name: Cross-build aarch64 Kernel
-    runs-on: ubuntu-24.05-arm
+    runs-on: ubuntu-24.04
     steps:
       - name: Code checkout
         uses: actions/checkout@v4
 
+      - name: Cache Build Directories
+        uses: actions/cache@v4
+        with:
+          # Define the paths to cache
+          path: |
+            tarballs
+            linux-${{ env.KERNEL_VERSION }}
+          # Create a unique key for the cache based on OS, architecture, and kernel version
+          key: ${{ runner.os }}-kernel-aarch64-${{ env.KERNEL_VERSION }}
+          # Provide a fallback key
+          restore-keys: |
+            ${{ runner.os }}-kernel-aarch64-
+
       - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install -y curl build-essential python3-pyelftools bc kmod cpio flex libncurses5-dev libelf-dev libssl-dev dwarves bison
+        run: sudo apt-get update && sudo apt-get install -y curl build-essential python3-pyelftools bc kmod cpio flex libncurses5-dev libelf-dev libssl-dev dwarves bison gcc-aarch64-linux-gnu
 
       - name: Build aarch64 kernel
-        run: make
+        run: make KERNEL_VERSION=linux-${{ env.KERNEL_VERSION }} ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu-
 
       - name: Upload aarch64 Build Artifacts
         # This step uploads the entire directory for the macos job to use
@@ -63,7 +92,7 @@ jobs:
       - name: Build .dylib from aarch64 artifacts
         # IMPORTANT: You may need a specific make target here instead of a plain 'make'.
         # For example: make my-dylib-target
-        run: make
+        run: make KERNEL_VERSION=linux-${{ env.KERNEL_VERSION }}
 
       - name: Upload .dylib Artifact
         uses: actions/upload-artifact@v4
