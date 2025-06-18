@@ -98,8 +98,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: dylib-arm64
-          # IMPORTANT: Replace this path with the actual path to your generated .dylib file
-          path: libkrun.4.9.0.dylib
+          path: libkrun.4.dylib
 
   # Job to create a release if the trigger was a tag
   release:
