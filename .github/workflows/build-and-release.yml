@@ -15,7 +15,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install -y make gcc bc bison flex libelf-dev
+        run: sudo apt-get update && sudo apt-get install -y curl build-essential python3-pyelftools bc kmod cpio flex libncurses5-dev libelf-dev libssl-dev dwarves bison
 
       - name: Build x86_64 kernel
         run: make
@@ -36,7 +36,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install -y make gcc bc bison flex libelf-dev
+        run: sudo apt-get update && sudo apt-get install -y curl build-essential python3-pyelftools bc kmod cpio flex libncurses5-dev libelf-dev libssl-dev dwarves bison
 
       - name: Build aarch64 kernel
         run: make
