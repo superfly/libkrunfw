@@ -14,18 +14,18 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install -y make gcc bc bison flex elfutils python3-pyelftools curl patch libelf-dev gcc-aarch64-linux-gnu gcc-riscv64-linux-gnu
+        run: sudo apt-get update && sudo apt-get install -y make gcc bc bison flex elfutils python3-pyelftools curl patch libelf-dev
 
       - name: Build x86_64 package
         run: |
           make
           make PREFIX=tmp install
           cd tmp
-          tar czf ../libkrunfw-x86_64.tgz lib64
+          tar czf ../libkrunfw-x86_64.tar.gz lib64
           cd ..
           rm -fr tmp
-          sha256sum libkrunfw-x86_64.tgz > libkrunfw-x86_64.tgz.sha256
-          gh release upload ${{github.event.release.tag_name}} libkrunfw-x86_64.tgz libkrunfw-x86_64.tgz.sha256
+          sha256sum libkrunfw-x86_64.tar.gz > libkrunfw-x86_64.tar.gz.sha256
+          gh release upload ${{github.event.release.tag_name}} libkrunfw-x86_64.tar.gz libkrunfw-x86_64.tar.gz.sha256
           make clean
         env:
           GITHUB_TOKEN: ${{ github.TOKEN }}
@@ -47,16 +47,16 @@ jobs:
           make PREFIX=tmp install
           mkdir libkrunfw
           cp Makefile LICENSE-* kernel.c bin2cbundle.py libkrunfw
-          tar czf libkrunfw-prebuilt-aarch64.tgz libkrunfw
+          tar czf libkrunfw-prebuilt-aarch64.tar.gz libkrunfw
           rm -fr libkrunfw
           cd tmp
-          tar czf ../libkrunfw-aarch64.tgz lib64
+          tar czf ../libkrunfw-aarch64.tar.gz lib64
           cd ..
           rm -fr tmp
-          sha256sum libkrunfw-prebuilt-aarch64.tgz > libkrunfw-prebuilt-aarch64.tgz.sha256
-          sha256sum libkrunfw-aarch64.tgz > libkrunfw-aarch64.tgz.sha256
-          gh release upload ${{github.event.release.tag_name}} libkrunfw-prebuilt-aarch64.tgz libkrunfw-prebuilt-aarch64.tgz.sha256
-          gh release upload ${{github.event.release.tag_name}} libkrunfw-aarch64.tgz libkrunfw-aarch64.tgz.sha256
+          sha256sum libkrunfw-prebuilt-aarch64.tar.gz > libkrunfw-prebuilt-aarch64.tar.gz.sha256
+          sha256sum libkrunfw-aarch64.tar.gz > libkrunfw-aarch64.tar.gz.sha256
+          gh release upload ${{github.event.release.tag_name}} libkrunfw-prebuilt-aarch64.tar.gz libkrunfw-prebuilt-aarch64.tar.gz.sha256
+          gh release upload ${{github.event.release.tag_name}} libkrunfw-aarch64.tar.gz libkrunfw-aarch64.tar.gz.sha256
         env:
           GITHUB_TOKEN: ${{ github.TOKEN }}
         shell: bash
@@ -70,32 +70,7 @@ jobs:
       - name: Clean
         run: make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- clean
 
-  build-riscv64:
-    name: Build package for riscv64
-    runs-on: ubuntu-latest
-    steps:
-      - name: Code checkout
-        uses: actions/checkout@v2
-
-      - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install -y make gcc bc bison flex elfutils python3-pyelftools curl patch libelf-dev gcc-riscv64-linux-gnu
-
-      - name: Build riscv64 package
-        run: |
-          make ARCH=riscv CROSS_COMPILE=riscv64-linux-gnu-
-          make ARCH=riscv CROSS_COMPILE=riscv64-linux-gnu- PREFIX=tmp install
-          cd tmp
-          tar czf ../libkrunfw-riscv64.tgz lib64
-          cd ..
-          rm -fr tmp
-          sha256sum libkrunfw-riscv64.tgz > libkrunfw-riscv64.tgz.sha256
-          gh release upload ${{github.event.release.tag_name}} libkrunfw-riscv64.tgz libkrunfw-riscv64.tgz.sha256
-          make ARCH=riscv CROSS_COMPILE=riscv64-linux-gnu- clean
-        env:
-          GITHUB_TOKEN: ${{ github.TOKEN }}
-        shell: bash
-
-  build-macos-aarch64:
+  build-darwin-aarch64:
     name: Build dylib for macOS aarch64
     needs: build-aarch64
     runs-on: macos-latest
@@ -113,11 +88,11 @@ jobs:
           make
           make PREFIX=tmp install
           cd tmp
-          tar czf ../libkrunfw-macos-aarch64.tgz lib
+          tar czf ../libkrunfw-darwin-aarch64.tar.gz lib
           cd ..
           rm -fr tmp
-          shasum -a 256 libkrunfw-macos-aarch64.tgz > libkrunfw-macos-aarch64.tgz.sha256
-          gh release upload ${{github.event.release.tag_name}} libkrunfw-macos-aarch64.tgz libkrunfw-macos-aarch64.tgz.sha256
+          shasum -a 256 libkrunfw-darwin-aarch64.tar.gz > libkrunfw-darwin-aarch64.tar.gz.sha256
+          gh release upload ${{github.event.release.tag_name}} libkrunfw-darwin-aarch64.tar.gz libkrunfw-darwin-aarch64.tar.gz.sha256
         env:
           GITHUB_TOKEN: ${{ github.TOKEN }}
         shell: bash
