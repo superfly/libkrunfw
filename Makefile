@@ -57,7 +57,7 @@ SONAME_Linux = -Wl,-soname,$(KRUNFW_SONAME_Linux)
 KRUNFW_BINARY_Darwin = libkrunfw.$(ABI_VERSION).dylib
 KRUNFW_SONAME_Darwin = libkrunfw.$(ABI_VERSION).dylib
 KRUNFW_BASE_Darwin = libkrunfw.dylib
-SONAME_Darwin =
+SONAME_Darwin = -Wl,-current_version,$(FULL_VERSION) -Wl,-compatibility_version,$(ABI_VERSION).0.0
 
 LIBDIR_Linux = lib64
 LIBDIR_Darwin = lib
