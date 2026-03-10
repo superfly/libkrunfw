@@ -24,7 +24,8 @@ jobs:
           tar czf ../libkrunfw-x86_64.tgz lib64
           cd ..
           rm -fr tmp
-          gh release upload ${{github.event.release.tag_name}} libkrunfw-x86_64.tgz
+          sha256sum libkrunfw-x86_64.tgz > libkrunfw-x86_64.tgz.sha256
+          gh release upload ${{github.event.release.tag_name}} libkrunfw-x86_64.tgz libkrunfw-x86_64.tgz.sha256
           make clean
         env:
           GITHUB_TOKEN: ${{ github.TOKEN }}
@@ -52,12 +53,22 @@ jobs:
           tar czf ../libkrunfw-aarch64.tgz lib64
           cd ..
           rm -fr tmp
-          gh release upload ${{github.event.release.tag_name}} libkrunfw-prebuilt-aarch64.tgz
-          gh release upload ${{github.event.release.tag_name}} libkrunfw-aarch64.tgz
-          make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- clean
+          sha256sum libkrunfw-prebuilt-aarch64.tgz > libkrunfw-prebuilt-aarch64.tgz.sha256
+          sha256sum libkrunfw-aarch64.tgz > libkrunfw-aarch64.tgz.sha256
+          gh release upload ${{github.event.release.tag_name}} libkrunfw-prebuilt-aarch64.tgz libkrunfw-prebuilt-aarch64.tgz.sha256
+          gh release upload ${{github.event.release.tag_name}} libkrunfw-aarch64.tgz libkrunfw-aarch64.tgz.sha256
         env:
           GITHUB_TOKEN: ${{ github.TOKEN }}
         shell: bash
+
+      - name: Upload kernel.c for macOS build
+        uses: actions/upload-artifact@v4
+        with:
+          name: kernel-c-aarch64
+          path: kernel.c
+
+      - name: Clean
+        run: make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- clean
 
   build-riscv64:
     name: Build package for riscv64
@@ -77,8 +88,36 @@ jobs:
           tar czf ../libkrunfw-riscv64.tgz lib64
           cd ..
           rm -fr tmp
-          gh release upload ${{github.event.release.tag_name}} libkrunfw-riscv64.tgz
+          sha256sum libkrunfw-riscv64.tgz > libkrunfw-riscv64.tgz.sha256
+          gh release upload ${{github.event.release.tag_name}} libkrunfw-riscv64.tgz libkrunfw-riscv64.tgz.sha256
           make ARCH=riscv CROSS_COMPILE=riscv64-linux-gnu- clean
+        env:
+          GITHUB_TOKEN: ${{ github.TOKEN }}
+        shell: bash
+
+  build-macos-aarch64:
+    name: Build dylib for macOS aarch64
+    needs: build-aarch64
+    runs-on: macos-latest
+    steps:
+      - name: Code checkout
+        uses: actions/checkout@v2
+
+      - name: Download kernel.c
+        uses: actions/download-artifact@v4
+        with:
+          name: kernel-c-aarch64
+
+      - name: Build macOS dylib
+        run: |
+          make
+          make PREFIX=tmp install
+          cd tmp
+          tar czf ../libkrunfw-macos-aarch64.tgz lib
+          cd ..
+          rm -fr tmp
+          shasum -a 256 libkrunfw-macos-aarch64.tgz > libkrunfw-macos-aarch64.tgz.sha256
+          gh release upload ${{github.event.release.tag_name}} libkrunfw-macos-aarch64.tgz libkrunfw-macos-aarch64.tgz.sha256
         env:
           GITHUB_TOKEN: ${{ github.TOKEN }}
         shell: bash
