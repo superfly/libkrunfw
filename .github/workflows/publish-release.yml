@@ -21,10 +21,10 @@ jobs:
           make
           make PREFIX=tmp install
           cd tmp
-          tar czf ../libkrunfw-x86_64.tar.gz lib64
+          tar czf ../libkrunfw-linux-x86_64.tar.gz lib64
           cd ..
           rm -fr tmp
-          gh release upload ${{github.event.release.tag_name}} libkrunfw-x86_64.tar.gz
+          gh release upload ${{github.event.release.tag_name}} libkrunfw-linux-x86_64.tar.gz
           make clean
         env:
           GITHUB_TOKEN: ${{ github.TOKEN }}
@@ -46,14 +46,14 @@ jobs:
           make PREFIX=tmp install
           mkdir libkrunfw
           cp Makefile LICENSE-* kernel.c bin2cbundle.py libkrunfw
-          tar czf libkrunfw-prebuilt-aarch64.tar.gz libkrunfw
+          tar czf libkrunfw-linux-prebuilt-aarch64.tar.gz libkrunfw
           rm -fr libkrunfw
           cd tmp
-          tar czf ../libkrunfw-aarch64.tar.gz lib64
+          tar czf ../libkrunfw-linux-aarch64.tar.gz lib64
           cd ..
           rm -fr tmp
-          gh release upload ${{github.event.release.tag_name}} libkrunfw-prebuilt-aarch64.tar.gz
-          gh release upload ${{github.event.release.tag_name}} libkrunfw-aarch64.tar.gz
+          gh release upload ${{github.event.release.tag_name}} libkrunfw-linux-prebuilt-aarch64.tar.gz
+          gh release upload ${{github.event.release.tag_name}} libkrunfw-linux-aarch64.tar.gz
         env:
           GITHUB_TOKEN: ${{ github.TOKEN }}
         shell: bash
