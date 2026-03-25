@@ -11,10 +11,25 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Code checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Install dependencies
         run: sudo apt-get update && sudo apt-get install -y make gcc bc bison flex elfutils python3-pyelftools curl patch libelf-dev
+
+      - name: Cache kernel build
+        uses: actions/cache@v4
+        with:
+          path: |
+            linux-*/vmlinux
+            linux-*/.config
+            linux-*/Module.symvers
+            linux-*/include/config
+            linux-*/include/generated
+            linux-*/arch/x86/include/generated
+            linux-*/scripts
+            linux-*/tools
+            kernel.c
+          key: kernel-x86_64-${{ hashFiles('Makefile', 'config-common', 'config-arch-x86_64', 'config-libkrunfw_x86_64', 'patches/**') }}
 
       - name: Build x86_64 package
         run: |
@@ -25,7 +40,6 @@ jobs:
           cd ..
           rm -fr tmp
           gh release upload ${{github.event.release.tag_name}} libkrunfw-linux-x86_64.tar.gz
-          make clean
         env:
           GITHUB_TOKEN: ${{ github.TOKEN }}
         shell: bash
@@ -35,10 +49,25 @@ jobs:
     runs-on: ubuntu-24.04-arm
     steps:
       - name: Code checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Install dependencies
         run: sudo apt-get update && sudo apt-get install -y make gcc bc bison flex elfutils python3-pyelftools curl patch libelf-dev
+
+      - name: Cache kernel build
+        uses: actions/cache@v4
+        with:
+          path: |
+            linux-*/arch/arm64/boot/Image
+            linux-*/.config
+            linux-*/Module.symvers
+            linux-*/include/config
+            linux-*/include/generated
+            linux-*/arch/arm64/include/generated
+            linux-*/scripts
+            linux-*/tools
+            kernel.c
+          key: kernel-aarch64-${{ hashFiles('Makefile', 'config-common', 'config-arch-aarch64', 'config-libkrunfw_aarch64', 'patches/**') }}
 
       - name: Build aarch64 package
         run: |
@@ -64,16 +93,13 @@ jobs:
           name: kernel-c-aarch64
           path: kernel.c
 
-      - name: Clean
-        run: make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- clean
-
   build-darwin-aarch64:
     name: Build dylib for macOS aarch64
     needs: build-aarch64
     runs-on: macos-latest
     steps:
       - name: Code checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Download kernel.c
         uses: actions/download-artifact@v4
