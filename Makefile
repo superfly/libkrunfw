@@ -90,7 +90,16 @@ $(KERNEL_TARBALL):
 $(KERNEL_SOURCES): $(KERNEL_TARBALL)
 	tar xf $(KERNEL_TARBALL)
 	for patch in $(KERNEL_PATCHES); do patch -p1 -d $(KERNEL_SOURCES) < "$$patch"; done
-	cp config-libkrunfw$(VARIANT)_$(GUESTARCH) $(KERNEL_SOURCES)/.config
+	@if [ -f config-common ] && [ -f config-arch-$(GUESTARCH) ]; then \
+		echo "Merging config fragments: config-common + config-arch-$(GUESTARCH)"; \
+		cd $(KERNEL_SOURCES) && KCONFIG_CONFIG=.config \
+			scripts/kconfig/merge_config.sh -m \
+			../config-common \
+			../config-arch-$(GUESTARCH); \
+	else \
+		echo "Using monolithic config: config-libkrunfw$(VARIANT)_$(GUESTARCH)"; \
+		cp config-libkrunfw$(VARIANT)_$(GUESTARCH) $(KERNEL_SOURCES)/.config; \
+	fi
 	cd $(KERNEL_SOURCES) ; $(MAKE) olddefconfig
 
 $(KERNEL_BINARY_$(GUESTARCH)): $(KERNEL_SOURCES)
