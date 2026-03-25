@@ -1,4 +1,4 @@
-KERNEL_VERSION = linux-6.12.62
+KERNEL_VERSION = linux-6.12.68
 KERNEL_REMOTE = https://cdn.kernel.org/pub/linux/kernel/v6.x/$(KERNEL_VERSION).tar.xz
 KERNEL_TARBALL = tarballs/$(KERNEL_VERSION).tar.xz
 KERNEL_SOURCES = $(KERNEL_VERSION)
@@ -6,8 +6,8 @@ KERNEL_PATCHES = $(shell find patches/ -name "0*.patch" | sort)
 KERNEL_C_BUNDLE = kernel.c
 
 ABI_VERSION = 5
-FULL_VERSION = 5.1.0
-TIMESTAMP = "Mon Dec 15 19:43:20 CET 2025"
+FULL_VERSION = 5.2.1
+TIMESTAMP = "Tue Feb 17 16:15:12 CET 2026"
 
 KERNEL_FLAGS = KBUILD_BUILD_TIMESTAMP=$(TIMESTAMP)
 KERNEL_FLAGS += KBUILD_BUILD_USER=root
@@ -57,7 +57,7 @@ SONAME_Linux = -Wl,-soname,$(KRUNFW_SONAME_Linux)
 KRUNFW_BINARY_Darwin = libkrunfw.$(ABI_VERSION).dylib
 KRUNFW_SONAME_Darwin = libkrunfw.$(ABI_VERSION).dylib
 KRUNFW_BASE_Darwin = libkrunfw.dylib
-SONAME_Darwin =
+SONAME_Darwin = -Wl,-current_version,$(FULL_VERSION) -Wl,-compatibility_version,$(ABI_VERSION).0.0
 
 LIBDIR_Linux = lib64
 LIBDIR_Darwin = lib
@@ -90,7 +90,16 @@ $(KERNEL_TARBALL):
 $(KERNEL_SOURCES): $(KERNEL_TARBALL)
 	tar xf $(KERNEL_TARBALL)
 	for patch in $(KERNEL_PATCHES); do patch -p1 -d $(KERNEL_SOURCES) < "$$patch"; done
-	cp config-libkrunfw$(VARIANT)_$(GUESTARCH) $(KERNEL_SOURCES)/.config
+	@if [ -f config-common ] && [ -f config-arch-$(GUESTARCH) ]; then \
+		echo "Merging config fragments: config-common + config-arch-$(GUESTARCH)"; \
+		cd $(KERNEL_SOURCES) && KCONFIG_CONFIG=.config \
+			scripts/kconfig/merge_config.sh -m \
+			../config-common \
+			../config-arch-$(GUESTARCH); \
+	else \
+		echo "Using monolithic config: config-libkrunfw$(VARIANT)_$(GUESTARCH)"; \
+		cp config-libkrunfw$(VARIANT)_$(GUESTARCH) $(KERNEL_SOURCES)/.config; \
+	fi
 	cd $(KERNEL_SOURCES) ; $(MAKE) olddefconfig
 
 $(KERNEL_BINARY_$(GUESTARCH)): $(KERNEL_SOURCES)

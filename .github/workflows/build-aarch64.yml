@@ -8,10 +8,25 @@ jobs:
     runs-on: ubuntu-24.04-arm
     steps:
       - name: Code checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Install dependencies
         run: sudo apt-get update && sudo apt-get install -y make gcc bc bison flex elfutils python3-pyelftools curl patch libelf-dev
+
+      - name: Cache kernel build
+        uses: actions/cache@v4
+        with:
+          path: |
+            linux-*/arch/arm64/boot/Image
+            linux-*/.config
+            linux-*/Module.symvers
+            linux-*/include/config
+            linux-*/include/generated
+            linux-*/arch/arm64/include/generated
+            linux-*/scripts
+            linux-*/tools
+            kernel.c
+          key: kernel-aarch64-${{ hashFiles('Makefile', 'config-common', 'config-arch-aarch64', 'config-libkrunfw_aarch64', 'patches/**') }}
 
       - name: Build aarch64 kernel
         run: make

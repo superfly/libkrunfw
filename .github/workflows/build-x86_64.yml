@@ -6,18 +6,27 @@ jobs:
     if: github.event_name == 'pull_request'
     name: Build x86_64 kernel
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        rust:
-          - stable
-        target:
-          - x86_64-unknown-linux-gnu
     steps:
       - name: Code checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Install dependencies
         run: sudo apt-get update && sudo apt-get install -y make gcc bc bison flex elfutils python3-pyelftools curl patch libelf-dev
+
+      - name: Cache kernel build
+        uses: actions/cache@v4
+        with:
+          path: |
+            linux-*/vmlinux
+            linux-*/.config
+            linux-*/Module.symvers
+            linux-*/include/config
+            linux-*/include/generated
+            linux-*/arch/x86/include/generated
+            linux-*/scripts
+            linux-*/tools
+            kernel.c
+          key: kernel-x86_64-${{ hashFiles('Makefile', 'config-common', 'config-arch-x86_64', 'config-libkrunfw_x86_64', 'patches/**') }}
 
       - name: Build x86_64 kernel
         run: make
